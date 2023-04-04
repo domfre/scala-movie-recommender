@@ -16,5 +16,27 @@ class RatingsLoader(sc : SparkContext, path : String) extends Serializable {
    *
    * @return The RDD for the given ratings
    */
-  def load() : RDD[(Int, Int, Option[Double], Double, Int)] = ???
+  def load() : RDD[(Int, Int, Option[Double], Double, Int)] = {
+    val ratings = sc.textFile(path).map(RatingsLoaderFunctions.toRatingTuple)
+    ratings.persist()
+  }
+}
+
+object RatingsLoaderFunctions {
+
+  /**
+   * Maps a rating represented as String in the form userId|movieId|rating|timestamp
+   * to the required formatted tuple (userId, movieId, Option[oldRating], newRating, timestamp)
+   *
+   * @return The formatted tuple for the given rating line
+   */
+  def toRatingTuple(line: String): (Int, Int, Option[Double], Double, Int) = {
+    val rating = line.split("\\|")
+    val userId = rating(0).toInt
+    val movieId = rating(1).toInt
+    val oldRating = Option.empty
+    val newRating = rating(2).toDouble
+    val timestamp = rating(3).toInt
+    (userId, movieId, oldRating, newRating, timestamp)
+  }
 }

@@ -16,6 +16,26 @@ class MoviesLoader(sc: SparkContext, path: String) extends Serializable {
    *
    * @return The RDD for the given titles
    */
-  def load(): RDD[(Int, String, List[String])] = ???
+  def load(): RDD[(Int, String, List[String])] = {
+    val movies = sc.textFile(path).map(MoviesLoaderFunctions.toMovieTuple)
+    movies.persist()
+  }
+}
+
+object MoviesLoaderFunctions {
+
+  /**
+   * Maps a movie represented as String in the form id|name|keyword1|keyword2| . . . |keywordn
+   * to the required formatted tuple (id, name, List[keywords])
+   *
+   * @return The formatted tuple for the given movie line
+   */
+  def toMovieTuple(line: String): (Int, String, List[String]) = {
+    val movie = line.split("\\|")
+    val movieId = movie(0).toInt
+    val movieName = movie(1)
+    val movieKeywords = movie(2).split("\\|").toList
+    (movieId, movieName, movieKeywords)
+  }
 }
 
