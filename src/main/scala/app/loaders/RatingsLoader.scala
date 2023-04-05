@@ -3,8 +3,6 @@ package app.loaders
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
-import java.io.File
-
 /**
  * Helper class for loading the input
  *
@@ -19,8 +17,7 @@ class RatingsLoader(sc : SparkContext, path : String) extends Serializable {
    * @return The RDD for the given ratings
    */
   def load() : RDD[(Int, Int, Option[Double], Double, Int)] = {
-    val fileItem = new File(getClass.getResource(path).getFile).getPath.replaceAll("%20", " ")
-    val ratings = sc.textFile(fileItem).map(RatingsLoaderFunctions.toRatingTuple)
+    val ratings = sc.textFile(path).map(RatingsLoaderFunctions.toRatingTuple)
     ratings.persist()
   }
 }
