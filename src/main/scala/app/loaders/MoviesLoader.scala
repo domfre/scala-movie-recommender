@@ -3,6 +3,8 @@ package app.loaders
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
+import java.io.File
+
 /**
  * Helper class for loading the input
  *
@@ -17,7 +19,8 @@ class MoviesLoader(sc: SparkContext, path: String) extends Serializable {
    * @return The RDD for the given titles
    */
   def load(): RDD[(Int, String, List[String])] = {
-    val movies = sc.textFile(path).map(MoviesLoaderFunctions.toMovieTuple)
+    val fileItem = new File(getClass.getResource(path).getFile).getPath
+    val movies = sc.textFile(fileItem).map(MoviesLoaderFunctions.toMovieTuple)
     movies.persist()
   }
 }
