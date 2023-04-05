@@ -31,10 +31,10 @@ object MoviesLoaderFunctions {
    * @return The formatted tuple for the given movie line
    */
   def toMovieTuple(line: String): (Int, String, List[String]) = {
-    val movie = line.split("\\|")
+    val movie = line.replaceAll("\"", "").split("\\|")
     val movieId = movie(0).toInt
     val movieName = movie(1)
-    val movieKeywords = movie(2).split("\\|").toList
+    val movieKeywords = movie.toList.drop(2)
     (movieId, movieName, movieKeywords)
   }
 }
