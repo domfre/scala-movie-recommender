@@ -37,23 +37,15 @@ class SimpleAnalytics() extends Serializable {
   }
 
   def getMostRatedMovieEachYear: RDD[(Int, String)] = {
-    val grouped = ratingsGroupedByYearByTitle
+    ratingsGroupedByYearByTitle
       .map(ratingsPerYearAndMovie =>
         (ratingsPerYearAndMovie._1._1, (ratingsPerYearAndMovie._1._2, ratingsPerYearAndMovie._2.toList.length)))
       .groupByKey()
-    grouped.collect().foreach(movie => println(movie))
-    val ratings = grouped
       .map(numberOfRatingsPerMovieAndYear =>
-        (numberOfRatingsPerMovieAndYear._2.toList.sortBy(_._1).maxBy(movieRatings => movieRatings._2)._1, numberOfRatingsPerMovieAndYear._1))
-    //ratings.collect().foreach(movie => println(movie))
-    val joined = ratings
+        (numberOfRatingsPerMovieAndYear._2.toSeq.sortWith(_._1 > _._1).maxBy(movieRatings => movieRatings._2)._1, numberOfRatingsPerMovieAndYear._1))
       .join(titlesGroupedById)
-    //joined.collect().foreach(movie => println(movie))
-    val sorted = joined
       .map(movie => (movie._2._1, movie._2._2.head._2))
       .sortByKey()
-    //sorted.collect().foreach(movie => println(movie))
-    sorted
   }
 
   def getMostRatedGenreEachYear: RDD[(Int, List[String])] = ???
