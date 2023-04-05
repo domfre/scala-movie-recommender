@@ -18,7 +18,7 @@ class SimpleAnalytics() extends Serializable {
             ratings: RDD[(Int, Int, Option[Double], Double, Int)],
             movies: RDD[(Int, String, List[String])]
           ): Unit = {
-    titlesGroupedById = movies.groupBy(movie => movie._1).partitionBy(moviesPartitioner)
+    titlesGroupedById = movies.groupBy(_._1).partitionBy(moviesPartitioner)
     titlesGroupedById.persist()
 
     ratingsGroupedByYearByTitle =
@@ -31,27 +31,38 @@ class SimpleAnalytics() extends Serializable {
 
   def getNumberOfMoviesRatedEachYear: RDD[(Int, Int)] = {
     ratingsGroupedByYearByTitle
-      .map(perYearAndMovieRatings => perYearAndMovieRatings._1)
+      .map(_._1)
       .groupByKey()
       .map(moviesGroupedByYear => (moviesGroupedByYear._1, moviesGroupedByYear._2.toList.length))
   }
 
   def getMostRatedMovieEachYear: RDD[(Int, String)] = {
-    ratingsGroupedByYearByTitle
-      .map(ratingsPerYearAndMovie =>
-        (ratingsPerYearAndMovie._1._1, (ratingsPerYearAndMovie._1._2, ratingsPerYearAndMovie._2.toList.length)))
-      .groupByKey()
-      .map(numberOfRatingsPerMovieAndYear =>
-        (numberOfRatingsPerMovieAndYear._2.toSeq.sortWith(_._1 > _._1).maxBy(_._2)._1, numberOfRatingsPerMovieAndYear._1))
-      .join(titlesGroupedById)
+    getNameAndKeywordsForMostRatedMoviesPerYear
       .map(movie => (movie._2._1, movie._2._2.head._2))
       .sortByKey()
   }
 
-  def getMostRatedGenreEachYear: RDD[(Int, List[String])] = ???
+  def getMostRatedGenreEachYear: RDD[(Int, List[String])] = {
+    getNameAndKeywordsForMostRatedMoviesPerYear
+      .map(movie => (movie._2._1, movie._2._2.head._3))
+      .sortByKey()
+  }
 
   // Note: if two genre has the same number of rating, return the first one based on lexicographical sorting on genre.
-  def getMostAndLeastRatedGenreAllTime: ((String, Int), (String, Int)) = ???
+  def getMostAndLeastRatedGenreAllTime: ((String, Int), (String, Int)) = {
+    val genreOccurrencesSorted =
+      getNameAndKeywordsForMostRatedMoviesPerYear
+      .map(_._2._2.head._3)
+      .flatMap(_.toList)
+      .map(genre => (genre, 1))
+      .reduceByKey((x, y) => x + y)
+      .sortBy(_._2)
+
+    val max = genreOccurrencesSorted.collect().last
+    val min = genreOccurrencesSorted.collect().head
+
+    (min, max)
+  }
 
   /**
    * Filter the movies RDD having the required genres
@@ -61,7 +72,10 @@ class SimpleAnalytics() extends Serializable {
    * @return The RDD for the movies which are in the supplied genres
    */
   def getAllMoviesByGenre(movies: RDD[(Int, String, List[String])],
-                          requiredGenres: RDD[String]): RDD[String] = ???
+                          requiredGenres: RDD[String]): RDD[String] = {
+    val genres = requiredGenres.collect().toList
+    filterMoviesBasedOnGenres(movies, genres)
+  }
 
   /**
    * Filter the movies RDD having the required genres
@@ -75,7 +89,33 @@ class SimpleAnalytics() extends Serializable {
    */
   def getAllMoviesByGenre_usingBroadcast(movies: RDD[(Int, String, List[String])],
                                          requiredGenres: List[String],
-                                         broadcastCallback: List[String] => Broadcast[List[String]]): RDD[String] = ???
+                                         broadcastCallback: List[String] => Broadcast[List[String]]): RDD[String] = {
+    val genres = broadcastCallback.apply(requiredGenres)
+    filterMoviesBasedOnGenres(movies, genres.value)
+  }
+
+  /**
+   * Scans movie ratings and filters most rated movies per year and joins with movie info via movieId
+   *
+   * @return RDD of (movieId, (year, Iterable[movie info])) pairs
+   */
+  def getNameAndKeywordsForMostRatedMoviesPerYear: RDD[(Int, (Int, Iterable[(Int, String, List[String])]))] = {
+    ratingsGroupedByYearByTitle
+      .map(ratingsPerYearAndMovie =>
+        (ratingsPerYearAndMovie._1._1, (ratingsPerYearAndMovie._1._2, ratingsPerYearAndMovie._2.toList.length)))
+      .groupByKey()
+      .map(numberOfRatingsPerMovieAndYear =>
+        (numberOfRatingsPerMovieAndYear._2.toSeq.sortWith(_._1 > _._1).maxBy(_._2)._1, numberOfRatingsPerMovieAndYear._1))
+      .join(titlesGroupedById)
+  }
+
+  def filterMoviesBasedOnGenres(movies: RDD[(Int, String, List[String])],
+                                requiredGenres: List[String]) : RDD[String] = {
+    movies
+      .filter(movie =>
+        movie._3.exists(genre => requiredGenres.contains(genre)))
+      .map(_._2)
+  }
 
 }
 
