@@ -42,7 +42,7 @@ class SimpleAnalytics() extends Serializable {
         (ratingsPerYearAndMovie._1._1, (ratingsPerYearAndMovie._1._2, ratingsPerYearAndMovie._2.toList.length)))
       .groupByKey()
       .map(numberOfRatingsPerMovieAndYear =>
-        (numberOfRatingsPerMovieAndYear._2.toSeq.sortWith(_._1 > _._1).maxBy(movieRatings => movieRatings._2)._1, numberOfRatingsPerMovieAndYear._1))
+        (numberOfRatingsPerMovieAndYear._2.toSeq.sortWith(_._1 > _._1).maxBy(_._2)._1, numberOfRatingsPerMovieAndYear._1))
       .join(titlesGroupedById)
       .map(movie => (movie._2._1, movie._2._2.head._2))
       .sortByKey()
