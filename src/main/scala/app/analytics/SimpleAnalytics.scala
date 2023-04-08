@@ -33,7 +33,7 @@ class SimpleAnalytics() extends Serializable {
     ratingsGroupedByYearByTitle
       .map(_._1)
       .groupByKey()
-      .map(moviesGroupedByYear => (moviesGroupedByYear._1, moviesGroupedByYear._2.toList.length))
+      .map(moviesGroupedByYear => (moviesGroupedByYear._1, moviesGroupedByYear._2.size))
   }
 
   def getMostRatedMovieEachYear: RDD[(Int, String)] = {
@@ -106,7 +106,7 @@ class SimpleAnalytics() extends Serializable {
   def getNameAndKeywordsForMostRatedMoviesPerYear: RDD[(Int, (Int, Iterable[(Int, String, List[String])]))] = {
     ratingsGroupedByYearByTitle
       .map(ratingsPerYearAndMovie =>
-        (ratingsPerYearAndMovie._1._1, (ratingsPerYearAndMovie._1._2, ratingsPerYearAndMovie._2.toList.length)))
+        (ratingsPerYearAndMovie._1._1, (ratingsPerYearAndMovie._1._2, ratingsPerYearAndMovie._2.size)))
       .groupByKey()
       .map(numberOfRatingsPerMovieAndYear =>
         (numberOfRatingsPerMovieAndYear._2.toSeq.sortWith(_._1 > _._1).maxBy(_._2)._1, numberOfRatingsPerMovieAndYear._1))
