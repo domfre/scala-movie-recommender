@@ -48,7 +48,7 @@ class Recommender(sc: SparkContext,
   }
 
   def topK(movies: List[(Int, Double)], K: Int): List[(Int, Double)] = {
-   movies
+    movies
       .sortWith(_._2 > _._2)
       .take(K)
   }
