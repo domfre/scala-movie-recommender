@@ -6,8 +6,6 @@ import app.recommender.collaborativeFiltering.CollaborativeFiltering
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
-import scala.::
-
 /**
  * Class for performing recommendations
  */
