@@ -24,10 +24,28 @@ class Recommender(sc: SparkContext,
    * Returns the top K recommendations for movies similar to the List of genres
    * for userID using the BaseLinePredictor
    */
-  def recommendBaseline(userId: Int, genre: List[String], K: Int): List[(Int, Double)] = ???
+  def recommendBaseline(userId: Int, genre: List[String], K: Int): List[(Int, Double)] = {
+    topK(retrieveSimilarMovies(genre)
+      .map(movieId => (movieId, baselinePredictor.predict(userId, movieId))), K)
+  }
 
   /**
    * The same as recommendBaseline, but using the CollaborativeFiltering predictor
    */
-  def recommendCollaborative(userId: Int, genre: List[String], K: Int): List[(Int, Double)] = ???
+  def recommendCollaborative(userId: Int, genre: List[String], K: Int): List[(Int, Double)] = {
+    topK(retrieveSimilarMovies(genre)
+      .map(movieId => (movieId, collaborativePredictor.predict(userId, movieId))), K)
+  }
+
+  def retrieveSimilarMovies(genre: List[String]): List[Int] = {
+    nn_lookup.lookup(sc.parallelize(List(genre)))
+      .map(_._2.map(_._1))
+      .first()
+  }
+
+  def topK(movies: List[(Int, Double)], K: Int): List[(Int, Double)] = {
+    movies
+      .sortWith(_._2 > _._2)
+      .take(K)
+  }
 }

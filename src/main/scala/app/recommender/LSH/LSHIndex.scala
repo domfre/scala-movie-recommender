@@ -34,14 +34,14 @@ class LSHIndex(data: RDD[(Int, String, List[String])], seed : IndexedSeq[Int]) e
    * @return Data structure of LSH index
    */
   def getBuckets(): RDD[(IndexedSeq[Int], List[(Int, String, List[String])])] = {
-    val hashedKeywords = hash(data.map(movie => movie._3))
+    val hashedKeywords = hash(data.map(_._3))
     val dataGroupedByListOfKeywords = data.map(title => (title._3, (title._1, title._2))).groupByKey()
     hashedKeywords
       .map(_.swap)
       .join(dataGroupedByListOfKeywords)
       .map(keywordGroup => (keywordGroup._2._1, keywordGroup._2._2.map(movie => (movie._1, movie._2, keywordGroup._1)).toList))
       .groupByKey()
-      .map(hashedMovies => (hashedMovies._1, hashedMovies._2.flatten.toSet.toList))
+      .mapValues(_.flatten.toSet.toList)
       .partitionBy(new HashPartitioner(hashedKeywords.groupByKey().count().toInt))
       .cache()
   }
