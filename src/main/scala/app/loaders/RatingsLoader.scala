@@ -25,13 +25,16 @@ class RatingsLoader(sc : SparkContext, path : String) extends Serializable {
   }
 }
 
+/**
+ * Helper functions for the ratings loader class
+ */
 object RatingsLoaderFunctions {
 
   /**
    * Maps a rating represented as String in the form userId|movieId|rating|timestamp
    * to the required formatted tuple (userId, movieId, Option[oldRating], newRating, timestamp)
    *
-   * @return The formatted tuple for the given rating line
+   * @return The formatted tuple (userId, movieId, Option[oldRating], newRating, timestamp) for the given rating line
    */
   def toRatingTuple(line: String): (Int, Int, Option[Double], Double, Int) = {
     val rating = line.split("\\|")

@@ -1,7 +1,6 @@
 package app.recommender.LSH
 
 
-import org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner
 import org.apache.spark.HashPartitioner
 import org.apache.spark.rdd.RDD
 
@@ -19,13 +18,13 @@ class LSHIndex(data: RDD[(Int, String, List[String])], seed : IndexedSeq[Int]) e
   private var buckets: RDD[(IndexedSeq[Int], List[(Int, String, List[String])])] = getBuckets()
 
   /**
-   * Hash function for an RDD of queries.
+   * Hash function for an RDD of queries (where a query is a list of keywords).
    *
    * @param input The RDD of keyword lists
    * @return The RDD of (signature, keyword list) pairs
    */
   def hash(input: RDD[List[String]]) : RDD[(IndexedSeq[Int], List[String])] = {
-    input.map(x => (minhash.hash(x), x))
+    input.map(keywordList => (minhash.hash(keywordList), keywordList))
   }
 
   /**
@@ -34,15 +33,24 @@ class LSHIndex(data: RDD[(Int, String, List[String])], seed : IndexedSeq[Int]) e
    * @return Data structure of LSH index
    */
   def getBuckets(): RDD[(IndexedSeq[Int], List[(Int, String, List[String])])] = {
-    val hashedKeywords = hash(data.map(_._3))
-    val dataGroupedByListOfKeywords = data.map(title => (title._3, (title._1, title._2))).groupByKey()
-    hashedKeywords
+    val hashedKeywordLists = hash(data.map(_._3))
+    val moviesGroupedByKeywordLists = data.map(movie => (movie._3, (movie._1, movie._2))).groupByKey()
+    hashedKeywordLists
       .map(_.swap)
-      .join(dataGroupedByListOfKeywords)
-      .map(keywordGroup => (keywordGroup._2._1, keywordGroup._2._2.map(movie => (movie._1, movie._2, keywordGroup._1)).toList))
+      .join(moviesGroupedByKeywordLists)
+
+      // create map of hashed keyword lists and its associated (movieId, movieTitle, keywords) tuples
+      // (hashedKeywords => List[(movieId, movieTitle, List[keyword])])
+      .map(hashedKeywordsMoviesGroupForKeywordList =>
+        (hashedKeywordsMoviesGroupForKeywordList._2._1,
+          hashedKeywordsMoviesGroupForKeywordList._2._2.map(movie =>
+            (movie._1, movie._2, hashedKeywordsMoviesGroupForKeywordList._1)).toList))
+
       .groupByKey()
+
+      // remove duplicates by mapping toSet
       .mapValues(_.flatten.toSet.toList)
-      .partitionBy(new HashPartitioner(hashedKeywords.groupByKey().count().toInt))
+      .partitionBy(new HashPartitioner(hashedKeywordLists.groupByKey().count().toInt))
       .cache()
   }
 

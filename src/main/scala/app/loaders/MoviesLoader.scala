@@ -25,13 +25,16 @@ class MoviesLoader(sc: SparkContext, path: String) extends Serializable {
   }
 }
 
+/**
+ * Helper functions for the movies loader class
+ */
 object MoviesLoaderFunctions {
 
   /**
-   * Maps a movie represented as String in the form id|name|keyword1|keyword2| . . . |keywordn
+   * Maps a movie represented as String in the form id|name|keyword1|keyword2| . . . |keyword
    * to the required formatted tuple (id, name, List[keywords])
    *
-   * @return The formatted tuple for the given movie line
+   * @return The formatted tuple (id, name, List[keywords]) for the given movie line
    */
   def toMovieTuple(line: String): (Int, String, List[String]) = {
     val movie = line.replaceAll("\"", "").split("\\|")
