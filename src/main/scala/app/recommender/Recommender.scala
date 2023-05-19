@@ -39,12 +39,24 @@ class Recommender(sc: SparkContext,
     topK(predictions, K)
   }
 
+  /**
+   * Search for similar movies based on genre
+   *
+   * @param genre to be searched for among available movies
+   * @return movies associated to the requested genre
+   */
   def retrieveSimilarMovies(genre: List[String]): List[Int] = {
     nn_lookup.lookup(sc.parallelize(List(genre)))
       .map(_._2.map(_._1))
       .first()
   }
 
+  /**
+   * Sort movies by rating and return top K rated movies
+   * @param movies
+   * @param K param defining number of top movies to return
+   * @return
+   */
   def topK(movies: List[(Int, Double)], K: Int): List[(Int, Double)] = {
     movies
       .sortWith(_._2 > _._2)

@@ -34,12 +34,17 @@ class Aggregator(sc: SparkContext) extends Serializable {
 
     avgRatings =
       ratings
+        // group by (userID, titleId)
         .groupBy(rating => (rating._1, rating._2))
+
+        // map to titleId and latest ratings
         .map(rating => (rating._1._2, rating._2.maxBy(_._5)._4))
         .groupByKey()
         .partitionBy(partitioner)
         .map(ratings => (ratings._1, (ratings._2.sum/ratings._2.size, ratings._2.size)))
         .rightOuterJoin(movies)
+
+        // map to RDD of (movieId, movieTitle, avgRating, numberOfRatings, List[keyword]) tuples
         .map(avgRatings =>
           (avgRatings._1, avgRatings._2._2._2, avgRatings._2._1.map(_._1).getOrElse(0.0), avgRatings._2._1.map(_._2).getOrElse(0), avgRatings._2._2._3))
 
