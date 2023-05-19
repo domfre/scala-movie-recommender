@@ -52,14 +52,26 @@ class SimpleAnalytics() extends Serializable {
   def getMostAndLeastRatedGenreAllTime: ((String, Int), (String, Int)) = {
     val genreOccurrencesSorted =
       getNameAndKeywordsForMostRatedMoviesPerYear
+
+        // map to list of List[keywords]
         .map(_._2._2.head._3)
+
+        // flatmap to list of keyword strings
         .flatMap(_.toList)
+
+        // count genre occurrences
         .map(genre => (genre, 1))
         .reduceByKey(_ + _)
+
+        // for each count, if more than one genre,
+        // get min based on lexicographical sorting
         .map(_.swap)
         .groupByKey()
         .map(genres => (genres._1, genres._2.min))
+
+        // sort by number of occurrences ascending
         .sortByKey()
+
         .map(_.swap)
 
     val max = genreOccurrencesSorted.collect().last

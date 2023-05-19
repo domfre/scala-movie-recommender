@@ -76,6 +76,8 @@ class Aggregator(sc: SparkContext) extends Serializable {
 
     val rated =
       filteredByKeywords
+
+      // check if movie is already rated (rating != 0.0)
       .filter(movie => movie._3 != 0.0)
 
     if (rated.isEmpty())
