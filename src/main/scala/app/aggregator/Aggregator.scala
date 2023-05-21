@@ -89,6 +89,8 @@ class Aggregator(sc: SparkContext) extends Serializable {
       0.0
     else
       rated
+
+        // retrieve ratings and calculate mean
         .map(movie => movie._3)
         .mean()
   }
